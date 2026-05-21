@@ -252,9 +252,14 @@ function spawnCandle(candle, roomId, scene, fireTexture) {
   input1.value = candle.name;
   input1.style.cssText = 'padding: 4px 8px; font-size: 14px; width: 150px; border: 1px solid #ccc; border-radius: 4px; opacity: 0.7;';
 
-  const input2 = document.createElement('input');
+  const input2 = document.createElement('textarea');
   input2.value = candle.note;
-  input2.style.cssText = 'padding: 4px 8px; font-size: 14px; width: 150px; border: 1px solid #ccc; border-radius: 4px; opacity: 0.7;';
+  input2.rows = 1;
+  input2.style.cssText = 'padding: 4px 8px; font-size: 14px; width: 150px; border: 1px solid #ccc; border-radius: 4px; opacity: 0.7; resize: none; overflow: hidden; font-family: Arial, sans-serif;';
+  input2.addEventListener('input', () => {
+    input2.style.height = 'auto';
+    input2.style.height = input2.scrollHeight + 'px';
+  });
 
   form.appendChild(input1);
   form.appendChild(input2);
