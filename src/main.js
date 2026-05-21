@@ -255,21 +255,22 @@ function spawnCandle(candle, roomId, scene, fireTexture) {
   const input2 = document.createElement('textarea');
   input2.value = candle.note;
   input2.rows = 1;
-  input2.style.cssText = 'padding: 4px 8px; font-size: 14px; width: 150px; border: 1px solid #ccc; border-radius: 4px; opacity: 0.7; resize: none; overflow: hidden; font-family: Arial, sans-serif;';
-  input2.addEventListener('input', () => {
-    input2.style.height = 'auto';
-    input2.style.height = input2.scrollHeight + 'px';
-  });
+  input2.style.cssText = 'padding: 4px 8px; font-size: 14px; width: 150px; height: 26px; min-height: 26px; border: 1px solid #ccc; border-radius: 4px; opacity: 0.7; resize: none; overflow: hidden; font-family: Arial, sans-serif; box-sizing: border-box;';
+
+  const autoResize = () => {
+    input2.style.height = '26px';
+    if (input2.scrollHeight > 26) {
+      input2.style.height = input2.scrollHeight + 'px';
+    }
+  };
+  input2.addEventListener('input', autoResize);
 
   form.appendChild(input1);
   form.appendChild(input2);
   document.body.appendChild(form);
   domForms.push(form);
 
-  requestAnimationFrame(() => {
-    input2.style.height = 'auto';
-    input2.style.height = input2.scrollHeight + 'px';
-  });
+  requestAnimationFrame(autoResize);
 
   if (candle.name && candle.note) {
     form.style.display = 'none';
