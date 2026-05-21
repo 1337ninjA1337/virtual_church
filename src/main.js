@@ -1,7 +1,10 @@
 import { Application, Assets, Sprite, Container, Graphics, Text } from 'pixi.js';
+import { db } from './firebase.js';
+import {
+  collection, addDoc, getDocs, doc, updateDoc, onSnapshot,
+} from 'firebase/firestore';
 
 const app = new Application();
-const rooms = [];
 let domForms = [];
 
 async function init() {
@@ -26,7 +29,7 @@ function clearDomForms() {
   domForms = [];
 }
 
-function showLobby() {
+async function showLobby() {
   app.stage.removeChildren();
   clearDomForms();
   app.canvas.style.cursor = 'default';
@@ -48,6 +51,10 @@ function showLobby() {
   const startY = 100;
   const cardHeight = 60;
   const gap = 15;
+
+  const roomsSnap = await getDocs(collection(db, 'rooms'));
+  const rooms = [];
+  roomsSnap.forEach((d) => rooms.push({ id: d.id, ...d.data() }));
 
   rooms.forEach((room, i) => {
     const card = new Container();
@@ -113,14 +120,13 @@ function showLobby() {
     requestAnimationFrame(() => input.focus());
 
     let created = false;
-    const createRoom = () => {
+    const createRoom = async () => {
       if (created) return;
       created = true;
       const name = input.value.trim() || `Церковь ${rooms.length + 1}`;
       input.remove();
-      const room = { name, candles: [] };
-      rooms.push(room);
-      showRoom(room);
+      const docRef = await addDoc(collection(db, 'rooms'), { name });
+      showRoom({ id: docRef.id, name });
     };
 
     input.addEventListener('keydown', (e) => {
@@ -145,7 +151,7 @@ function showLobby() {
   };
 }
 
-function showRoom(room) {
+async function showRoom(room) {
   app.stage.removeChildren();
   clearDomForms();
 
@@ -168,7 +174,11 @@ function showRoom(room) {
 
   const fireTexture = Assets.get('assets/fire.png');
 
-  room.candles.forEach((c) => spawnCandle(c, scene, fireTexture));
+  const candlesRef = collection(db, 'rooms', room.id, 'candles');
+  const candlesSnap = await getDocs(candlesRef);
+  candlesSnap.forEach((d) => {
+    spawnCandle({ id: d.id, ...d.data() }, room.id, scene, fireTexture);
+  });
 
   bg.on('pointerenter', () => {
     cursor.visible = true;
@@ -184,13 +194,13 @@ function showRoom(room) {
     cursor.position.copyFrom(e.global);
   });
 
-  bg.on('pointerdown', (e) => {
+  bg.on('pointerdown', async (e) => {
     const candle = { x: e.global.x, y: e.global.y, name: '', note: '' };
-    room.candles.push(candle);
-    spawnCandle(candle, scene, fireTexture);
+    const docRef = await addDoc(candlesRef, candle);
+    candle.id = docRef.id;
+    spawnCandle(candle, room.id, scene, fireTexture);
   });
 
-  // Back button
   const backBtn = new Container();
   backBtn.x = 15;
   backBtn.y = 15;
@@ -219,7 +229,7 @@ function showRoom(room) {
   };
 }
 
-function spawnCandle(candle, scene, fireTexture) {
+function spawnCandle(candle, roomId, scene, fireTexture) {
   const fire = new Sprite(fireTexture);
   fire.anchor.set(0.5);
   fire.scale.set(0.5);
@@ -255,8 +265,17 @@ function spawnCandle(candle, scene, fireTexture) {
     form.style.display = 'none';
   }
 
-  input1.addEventListener('input', () => { candle.name = input1.value; });
-  input2.addEventListener('input', () => { candle.note = input2.value; });
+  const candleDoc = doc(db, 'rooms', roomId, 'candles', candle.id);
+
+  input1.addEventListener('input', () => {
+    candle.name = input1.value;
+    updateDoc(candleDoc, { name: input1.value });
+  });
+
+  input2.addEventListener('input', () => {
+    candle.note = input2.value;
+    updateDoc(candleDoc, { note: input2.value });
+  });
 
   const hideIfFilled = () => {
     if (input1.value.trim() && input2.value.trim()) {
