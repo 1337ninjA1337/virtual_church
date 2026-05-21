@@ -266,6 +266,11 @@ function spawnCandle(candle, roomId, scene, fireTexture) {
   document.body.appendChild(form);
   domForms.push(form);
 
+  requestAnimationFrame(() => {
+    input2.style.height = 'auto';
+    input2.style.height = input2.scrollHeight + 'px';
+  });
+
   if (candle.name && candle.note) {
     form.style.display = 'none';
   }
